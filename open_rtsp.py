@@ -1,7 +1,7 @@
 import cv2
 
 cv2.namedWindow("RTSP View", cv2.WINDOW_NORMAL)
-cap = cv2.VideoCapture("rtsp://192.168.2.95:8553/video_stream")
+cap = cv2.VideoCapture("rtsp://192.168.2.95:8553/video_stream")   #iwpl1u rpi5 address in correspondence to the drone's aviator
 while True:
     
     ret, frame = cap.read()
