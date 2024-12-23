@@ -2,25 +2,20 @@ import gi
 import cv2
 import argparse
 import warnings
-
-# import required library like Gstreamer and GstreamerRtspServer
 gi.require_version('Gst', '1.0')
 gi.require_version('GstRtspServer', '1.0')
 from gi.repository import Gst, GstRtspServer, GObject
 
-# Sensor Factory class which inherits the GstRtspServer base class and add
-# properties to it.
 class SensorFactory(GstRtspServer.RTSPMediaFactory):
     def __init__(self, **properties):
         super(SensorFactory, self).__init__(**properties)
-        # Use cv2.VideoCapture with the file path for pre-recorded video
-        self.cap = cv2.VideoCapture(opt.device_id)  # Now device_id refers to a video file path
+        self.cap = cv2.VideoCapture(opt.device_id)  
         if not self.cap.isOpened():
             print(f"Error opening video file {opt.device_id}")
             exit(1)
         self.number_frames = 0
         self.fps = opt.fps
-        self.duration = 1 / self.fps * Gst.SECOND  # duration of a frame in nanoseconds
+        self.duration = 1 / self.fps * Gst.SECOND  
         self.launch_string = 'appsrc name=source is-live=true block=true format=GST_FORMAT_TIME ' \
                              'caps=video/x-raw,format=BGR,width={},height={},framerate={}/1 ' \
                              '! videoconvert ! queue ! video/x-raw,format=I420 ' \
@@ -28,13 +23,11 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
                              '! queue ! rtph264pay config-interval=1 name=pay0 pt=96' \
                              .format(opt.image_width, opt.image_height, self.fps)
         
-    # method to capture the video feed from the pre-recorded video and push it to the
-    # streaming buffer.
+    # method to capture the video feed from the pre-recorded video and push it to the streaming buffer.
     def on_need_data(self, src, length):
         if self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret:
-                # It is better to change the resolution of the frame
                 frame = cv2.resize(frame, (opt.image_width, opt.image_height), \
                     interpolation = cv2.INTER_LINEAR)
                 data = frame.tostring()
@@ -72,7 +65,7 @@ class GstServer(GstRtspServer.RTSPServer):
         self.get_mount_points().add_factory(opt.stream_uri, self.factory)
         self.attach(None)
 
-# getting the required information from the user 
+# user info
 parser = argparse.ArgumentParser()
 parser.add_argument("--device_id", required=True, help="path to the video file (e.g., /path/to/video.mp4)")
 parser.add_argument("--fps", required=True, help="fps of the video", type=int)
@@ -83,7 +76,8 @@ parser.add_argument("--stream_uri", default="/video_stream", help="rtsp video st
 opt = parser.parse_args()
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-# initializing the threads and running the stream on loop.
+
+
 GObject.threads_init()
 Gst.init(None)
 server = GstServer()
