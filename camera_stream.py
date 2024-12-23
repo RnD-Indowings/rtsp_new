@@ -1,35 +1,30 @@
 import gi
 import cv2
 import argparse
-
-# import required library like Gstreamer and GstreamerRtspServer
 gi.require_version('Gst', '1.0')
 gi.require_version('GstRtspServer', '1.0')
 from gi.repository import Gst, GstRtspServer, GObject
 
-# Sensor Factory class which inherits the GstRtspServer base class and add
-# properties to it.
 class SensorFactory(GstRtspServer.RTSPMediaFactory):
     def __init__(self, **properties):
         super(SensorFactory, self).__init__(**properties)
         self.cap = cv2.VideoCapture(opt.device_id)
         self.number_frames = 0
         self.fps = opt.fps
-        self.duration = 1 / self.fps * Gst.SECOND  # duration of a frame in nanoseconds
+        self.duration = 1 / self.fps * Gst.SECOND  
         self.launch_string = 'appsrc name=source is-live=true block=true format=GST_FORMAT_TIME ' \
                              'caps=video/x-raw,format=BGR,width={},height={},framerate={}/1 ' \
                              '! videoconvert ! video/x-raw,format=I420 ' \
                              '! x264enc speed-preset=ultrafast tune=zerolatency ' \
                              '! rtph264pay config-interval=1 name=pay0 pt=96' \
                              .format(opt.image_width, opt.image_height, self.fps)
-    # method to capture the video feed from the camera and push it to the
-    # streaming buffer.
+
+    
+    # method to capture the video feed from the camera and push it to the streaming buffer.
     def on_need_data(self, src, length):
         if self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret:
-                # It is better to change the resolution of the camera 
-                # instead of changing the image shape as it affects the image quality.
                 frame = cv2.resize(frame, (opt.image_width, opt.image_height), \
                     interpolation = cv2.INTER_LINEAR)
                 data = frame.tostring()
@@ -46,9 +41,13 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
                                                                                        self.duration / Gst.SECOND))
                 if retval != Gst.FlowReturn.OK:
                     print(retval)
+
+    
     # attach the launch string to the override method
     def do_create_element(self, url):
         return Gst.parse_launch(self.launch_string)
+
+    
     
     # attaching the source element to the rtsp media
     def do_configure(self, rtsp_media):
@@ -65,8 +64,7 @@ class GstServer(GstRtspServer.RTSPServer):
         self.set_service(str(opt.port))
         self.get_mount_points().add_factory(opt.stream_uri, self.factory)
         self.attach(None)
-
-# getting the required information from the user 
+ 
 parser = argparse.ArgumentParser()
 parser.add_argument("--device_id", required=True, help="device id for the \
                 video device or video file location")
@@ -82,7 +80,7 @@ try:
 except ValueError:
     pass
 
-# initializing the threads and running the stream on loop.
+
 GObject.threads_init()
 Gst.init(None)
 server = GstServer()
